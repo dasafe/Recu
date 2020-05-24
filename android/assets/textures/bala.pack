@@ -1,0 +1,18 @@
+bala.png
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+bala
+    rotate: false
+    xy: 0, 0
+    size: 235, 235
+    orig: 235, 235
+    offset: 0, 0
+    index: 1
+bala
+    rotate: false
+    xy: 235, 0
+    size: 235, 235
+    orig: 235, 235
+    offset: 0, 0
+    index: 2
