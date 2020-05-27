@@ -19,6 +19,8 @@ import com.badlogic.gdx.utils.TimeUtils;
 
 import java.util.Iterator;
 
+import sun.java2d.ScreenUpdateManager;
+
 public class Recu extends ApplicationAdapter {
 
 	SpriteBatch batch;
@@ -37,6 +39,7 @@ public class Recu extends ApplicationAdapter {
 	private TextureRegion derecha0;
 	private TextureRegion izquierda0;
 	private TextureRegion balaImg;
+	public static Texture fondo;
 
 	private int posicion;
 	private OrthographicCamera camera;
@@ -46,8 +49,10 @@ public class Recu extends ApplicationAdapter {
 	private BitmapFont hud;
 	float respawn = 1;
 	boolean over = false;
+	boolean inicio = true;
 
-	public int finalTime;
+	public float finalTime;
+	public float startTime;
 	
 	@Override
 	public void create () {
@@ -55,6 +60,7 @@ public class Recu extends ApplicationAdapter {
 		camera = new OrthographicCamera();
 		camera.setToOrtho(false, 480, 320);
 
+		fondo = new Texture("textures/fondo.jpg");
 		pj = new TextureAtlas(Gdx.files.internal("textures/pj.pack"));
 		espalda0 = pj.findRegion("espalda0");
 		cara0 = pj.findRegion("cara0");
@@ -86,14 +92,18 @@ public class Recu extends ApplicationAdapter {
 	@Override
 	public void render () {
 		stateTime += 1 + Gdx.graphics.getDeltaTime();
+		if (inicio){
+			startTime = stateTime;
+		}
 		Gdx.gl.glClearColor(0, 0, 1, 1);
 		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 		camera.update();
 		batch.setProjectionMatrix(camera.combined);
 
 		batch.begin();
+		batch.draw(fondo,0,0);
 		if (!over)
-		hud.draw(batch, "Tiempo sobrevivido: " + Math.round(stateTime/100), 5, 310);
+		hud.draw(batch, "Tiempo sobrevivido: " + Math.round((stateTime - startTime)/100), 5, 310);
 
 		if(Gdx.input.isKeyPressed(Input.Keys.UP)){
 			animacion = new Sprite(espaldaAnimation.getKeyFrame(stateTime,true));
@@ -108,6 +118,22 @@ public class Recu extends ApplicationAdapter {
 			animacion = new Sprite(derechaAnimation.getKeyFrame(stateTime,true));
 			animacion.flip(true,false);
 			posicion = -2;
+		}else if (Gdx.input.isTouched()) {
+			if (Gdx.input.getX() < Gdx.graphics.getWidth() * 5 / 12){
+				animacion = new Sprite(derechaAnimation.getKeyFrame(stateTime,true));
+				animacion.flip(true,false);
+				posicion = -2;
+			} else if (Gdx.input.getX() > Gdx.graphics.getWidth() * 7 / 12) {
+				animacion = new Sprite(derechaAnimation.getKeyFrame(stateTime,true));
+				posicion = 2;
+			}
+			if (Gdx.input.getY() < Gdx.graphics.getHeight() * 5 / 12){
+				animacion = new Sprite(espaldaAnimation.getKeyFrame(stateTime,true));
+				posicion = 1;
+			} else if (Gdx.input.getY() > Gdx.graphics.getHeight() * 7 / 12){
+				animacion = new Sprite(caraAnimation.getKeyFrame(stateTime,true));
+				posicion = -1;
+			}
 		}else {
 			if (posicion == -1){
 				animacion = cara0;
@@ -119,7 +145,18 @@ public class Recu extends ApplicationAdapter {
 				animacion = espalda0;
 			}
 		}
-
+		if (Gdx.input.isTouched()) {
+			if (Gdx.input.getX() < Gdx.graphics.getWidth() * 5 / 12){
+				jugador.x -= 200 * Gdx.graphics.getDeltaTime();
+			} else if (Gdx.input.getX() > Gdx.graphics.getWidth() * 7 / 12) {
+				jugador.x += 200 * Gdx.graphics.getDeltaTime();
+			}
+			if (Gdx.input.getY() < Gdx.graphics.getHeight() * 5 / 12){
+				jugador.y += 200 * Gdx.graphics.getDeltaTime();
+			} else if (Gdx.input.getY() > Gdx.graphics.getHeight() * 7 / 12){
+				jugador.y -= 200 * Gdx.graphics.getDeltaTime();
+			}
+		}
 		if (Gdx.input.isKeyPressed(Input.Keys.LEFT))
 			jugador.x -= 200 * Gdx.graphics.getDeltaTime();
 		if (Gdx.input.isKeyPressed(Input.Keys.RIGHT))
@@ -166,17 +203,35 @@ public class Recu extends ApplicationAdapter {
 				}
 
 				if (bala.overlaps(jugador)) {
-					finalTime = Math.round(stateTime / 100);
+					finalTime = stateTime - startTime;
 					iter.remove();
 					over = true;
 				}
 			}
 		}
-		if (over){
-			hud.draw(batch, "GAME OVER", 480/2-50, 320/2+20);
-			hud.draw(batch, "Tiempo sobrevivido: " + finalTime +" s", 480/2-75, 320/2);
+		if (!over){
+			inicio = false;
+			batch.end();
 		}
-		batch.end();
+		if (over){
+			hud.draw(batch, "GAME OVER", 480/2-45, 320/2+20);
+			hud.draw(batch, "Tiempo sobrevivido: " + Math.round((finalTime) / 100) +" s", 480/2-72, 320/2);
+			hud.draw(batch, "Enter o pulsa AQUI para reintentar", 480/2-100, 30);
+			batch.end();
+			if (Gdx.input.isTouched()) {
+				if (Gdx.input.getY() > Gdx.graphics.getHeight() * 11 / 12){
+					over = false;
+					inicio = true;
+					create();
+					render();
+				}
+			}else if (Gdx.input.isKeyPressed(Input.Keys.ENTER)){
+				over = false;
+				inicio = true;
+				create();
+				render();
+			}
+		}
 	}
 
 	private void spawnBalas() {
